@@ -12,6 +12,8 @@
         <module>http</module>
         <module>kafka082</module>
         <module>kafka0100</module>
+        <module>flink</module>
+        <module>flink</module>
     </modules>
 
     <dependencies>
@@ -19,6 +21,12 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>2.11.7</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
         </dependency>
     </dependencies>
 
@@ -42,7 +50,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>flink.FlinkDemoWithKafka</mainClass>
+                            <mainClass>KafkaToHdfs</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
