@@ -18,8 +18,15 @@ public class KafkaToHdfs {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaToHdfs.class);
 
     /**
+     * flink run -m yarn-cluster -yn 4 -yjm 1024 -ytm 4096 [servers] [zk] [groupId] [topic] [hdfsPath]
+     * @param servers kafka-broker-servers
+     * @param zk kafka-zk
+     * @param groupId consumer-groupId
+     * @param topic 要消费的topic名称
+     * @param hdfsPath 要输出的hdfs基础路径
      * @usage java -cp [jar_path] KafkaToHdfs [servers] [zk] [groupId] [topic] [hdfsPath]
      * @example java -cp [jar_path] KafkaToHdfs 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq
+     * flink run -m yarn-cluster -yn 4 -yjm 1024 -ytm 4096 flink-1.0-SNAPSHOT-jar-with-dependencies.jar 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq/data
      * @param args
      * @throws Exception
      */
@@ -51,7 +58,7 @@ public class KafkaToHdfs {
         env.enableCheckpointing(5000);//flink checkpoint 间隔，5000ms
         //创建一个kafka消费者，注意flink支持topic的正则表达式（即可以根据指定规则自动发现kafka topic并进行消费，默认offset为最早）
         FlinkKafkaConsumer010<String> kafkaConsumer010 = new FlinkKafkaConsumer010<String>(topic, new SimpleStringSchema(), properties);
-        kafkaConsumer010.setStartFromEarliest();//设定consumer的offset为最早
+        kafkaConsumer010.setStartFromEarliest();//设定consumer的offset为最早//TODO:后期可以修改为从命令行指定offset
         DataStream<String> stream = env.addSource(kafkaConsumer010);//创建一个flink DataStream
         BucketingSink<String> hdfs = new BucketingSink<>(hdfsPath);
         hdfs.setBucketer(new BasePathBucketer<>());
