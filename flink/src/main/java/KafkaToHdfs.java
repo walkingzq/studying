@@ -19,11 +19,12 @@ public class KafkaToHdfs {
 
     /**
      * flink run -m yarn-cluster -yn 4 -yjm 1024 -ytm 4096 [servers] [zk] [groupId] [topic] [hdfsPath]
-     * @param servers kafka-broker-servers
-     * @param zk kafka-zk
-     * @param groupId consumer-groupId
-     * @param topic 要消费的topic名称
-     * @param hdfsPath 要输出的hdfs基础路径
+     * 所需参数包括：
+     * servers kafka-broker-servers
+     * zk kafka-zk
+     * groupId consumer-groupId
+     * topic 要消费的topic名称
+     * hdfsPath 要输出的hdfs基础路径
      * @usage java -cp [jar_path] KafkaToHdfs [servers] [zk] [groupId] [topic] [hdfsPath]
      * @example java -cp [jar_path] KafkaToHdfs 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq
      * flink run -m yarn-cluster -yn 4 -yjm 1024 -ytm 4096 flink-1.0-SNAPSHOT-jar-with-dependencies.jar 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq/data
@@ -61,6 +62,10 @@ public class KafkaToHdfs {
         kafkaConsumer010.setStartFromEarliest();//设定consumer的offset为最早//TODO:后期可以修改为从命令行指定offset
         DataStream<String> stream = env.addSource(kafkaConsumer010);//创建一个flink DataStream
         BucketingSink<String> hdfs = new BucketingSink<>(hdfsPath);
+        //flink支持目录回滚机制，通过BucketingSink.setBucketer(Bucketer<T> bucketer)可以指定输出数据所在子目录的划分方式
+        //flink原生提供了BasePathBucketer和DateTimeBucketer:
+        //1.BasePathBucketer方式是不划分子目录，将所有都输出至给定的hdfs-path;
+        //2.DateTimeBucketer可以按照时间周期（SimpleDateFormat格式）划分子目录
         hdfs.setBucketer(new BasePathBucketer<>());
         stream.addSink(hdfs);//添加hdfs-sink
         try {
