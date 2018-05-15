@@ -1,8 +1,10 @@
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
+import org.apache.flink.util.Collector;
 
 import java.util.Properties;
 
@@ -28,19 +30,26 @@ public class Img {
         String producerTopic = "system.pic_todownload_ali_01";
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(broker, producerTopic, new SimpleStringSchema());
 
-        while (true){
-            int count = Integer.MIN_VALUE;
-            for (int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE; i++){
-                count++;
-            }
-//            img.run(senv,kafkaIn010,kafkaOut010);
-        }
+        int num = args[0] == null ? 5 : Integer.parseInt(args[0]);
+        img.run(senv,kafkaIn010,kafkaOut010,num);
     }
 
-    public void run(StreamExecutionEnvironment senv, FlinkKafkaConsumer010<String> kafkaIn010, FlinkKafkaProducer010<String> kafkaOut010) throws Exception{
+    public void run(StreamExecutionEnvironment senv, FlinkKafkaConsumer010<String> kafkaIn010, FlinkKafkaProducer010<String> kafkaOut010, int num) throws Exception{
         DataStream<String> img_copy_to_self = senv.addSource(kafkaIn010);
-        img_copy_to_self.addSink(kafkaOut010);
+        DataStream<String> stream = img_copy_to_self.flatMap(new FlatMapFunction<String, String>() {
+            @Override
+            public void flatMap(String value, Collector<String> out) throws Exception {
+                for (int j = 0; j < num; j++){
+                    int count = Integer.MIN_VALUE;
+                    for (int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE; i++) {
+                        count++;
+                    }
+                }
+                out.collect(value);
+            }
+        });
+        stream.addSink(kafkaOut010);
 //        img_copy_to_self.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img2").setBucketer(new BasePathBucketer<>()));
-        senv.execute("img_copy_to_self");
+        senv.execute("img");
     }
 }
