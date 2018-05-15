@@ -14,6 +14,7 @@
         <module>kafka0100</module>
         <module>flink</module>
         <module>flink</module>
+        <module>storm</module>
     </modules>
 
     <dependencies>
@@ -27,6 +28,11 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
+        </dependency>
+        <dependency>
+            <groupId>Junit</groupId>
+            <artifactId>Junit</artifactId>
+            <version>4.12</version>
         </dependency>
     </dependencies>
 
@@ -50,7 +56,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>KafkaToHdfs</mainClass>
+                            <mainClass>Img2</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
