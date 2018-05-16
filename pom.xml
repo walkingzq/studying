@@ -56,7 +56,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>Img2</mainClass>
+                            <mainClass>Img</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
