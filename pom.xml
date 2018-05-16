@@ -15,6 +15,8 @@
         <module>flink</module>
         <module>flink</module>
         <module>storm</module>
+        <module>hadoop</module>
+        <module>kafka</module>
     </modules>
 
     <dependencies>
@@ -56,7 +58,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>Img2</mainClass>
+                            <mainClass>hdfs.HDFSTimeCount</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -1,6 +1,8 @@
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.fs.bucketing.BasePathBucketer;
+import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
 import org.apache.log4j.Logger;
@@ -38,7 +40,7 @@ public class Kafka08ToKafka010 {
     public void run(StreamExecutionEnvironment senv, FlinkKafkaConsumer08<String> kafkaIn08, FlinkKafkaProducer010<String> kafkaOut010) throws Exception{
         DataStream<String> img = senv.addSource(kafkaIn08);
         img.addSink(kafkaOut010);
-//        img.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img1").setBucketer(new BasePathBucketer<>()));
+        img.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img1").setBucketer(new BasePathBucketer<>()));
         senv.execute("img_in");
     }
 }
