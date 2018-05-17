@@ -17,6 +17,7 @@ import java.util.StringTokenizer;
 
 /**
  * Created by Zhao Qing on 2018/5/16.
+ * hadoop jar <jar_name> <input_path> <output_path>
  */
 public class HDFSTimeCount {
     public static void main(String[] args) throws Exception{
