@@ -30,7 +30,8 @@ public class Img {
         String producerTopic = "system.pic_todownload_ali_01";
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(broker, producerTopic, new SimpleStringSchema());
 
-        int num = args[0] == null ? 5 : Integer.parseInt(args[0]);
+//        int num = args[0] == null ? 5 : Integer.parseInt(args[0]);
+        int num = 50000;
         img.run(senv,kafkaIn010,kafkaOut010,num);
     }
 
