@@ -58,7 +58,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>checkingout.ThroughPutTesting</mainClass>
+                            <mainClass>hdfs.HDFSTimeCount</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -53,7 +53,7 @@ public class HDFSTimeCount {
         ) throws IOException, InterruptedException {
             StringTokenizer itr = new StringTokenizer(value.toString(), "\n");//利用输入的value构造一个StringTokenizer对象
             while (itr.hasMoreTokens()) {
-                word.set(itr.nextToken().split(" ")[0].substring(0,10));//设置键值为时间戳（秒级）
+                word.set(itr.nextToken().split(",")[0].substring(0,10));//设置键值为时间戳（秒级）
                 context.write(word, one);//Context.write(输出KEY,输出VALUE)-->生成一个输出的键值对
             }
         }
