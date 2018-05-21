@@ -24,7 +24,7 @@ public class RecordEmiter {
 
         int limit = rate / times; // 10ms内应该执行多少次
 
-        ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(1);// 单线程
+        ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(2);// 单线程
         AtomicInteger count = new AtomicInteger(0);// 计数器
         Runnable command = () -> {
             for (int i = 0; i < limit; i++) {

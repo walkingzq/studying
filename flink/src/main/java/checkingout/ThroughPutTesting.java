@@ -9,6 +9,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.fs.Clock;
+import org.apache.flink.streaming.connectors.fs.StringWriter;
 import org.apache.flink.streaming.connectors.fs.bucketing.Bucketer;
 import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Zhao Qing on 2018/5/16.
+ * checkingout.ThroughPutTesting
  * 内容：吞吐量测试
  * 思路：接入一个无限量数据（相对而言）的kafka topic作为flink输入，flink在收到数据后添加一个时间戳就输出至另一个kafka topic和hdfs
  * 运行：
@@ -53,7 +55,7 @@ public class ThroughPutTesting {
         //输出kafka信息（kafka010版本）
         String broker = "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092";
 //        String producerTopic = "throughput.testing.withFlinkTime";
-        String producerTopic = "test";
+        String producerTopic = "basetest";
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(broker, producerTopic, new SimpleStringSchema());
         kafkaOut010.setWriteTimestampToKafka(true);//将进入flink时间作为kafka记录的时间戳
         if (isEnableCheckpoint){
@@ -91,9 +93,15 @@ public class ThroughPutTesting {
                 return sb.toString();
             }
         });
-        stream.addSink(new BucketingSink<String>(hdfsPath).setBucketer(new SelfBucketer<>()));
-        stream.addSink(kafkaOut010);
-        stream.addSink(kafkaOut010_02);
+        BucketingSink hdfsSink = new BucketingSink<String>(hdfsPath)
+                .setBucketer(new SelfBucketer<>());
+//        hdfsSink.setWriter(new StringWriter());//设置writer
+//        hdfsSink.setInactiveBucketCheckInterval();
+//        hdfsSink.setInactiveBucketThreshold();
+//        hdfsSink.setBatchSize(400 * 1024 * 1024);//设置每个文件的大小
+        stream.addSink(hdfsSink);
+//        stream.addSink(kafkaOut010);
+//        stream.addSink(kafkaOut010_02);
         //开始执行
         senv.execute("ThroughPutTesting");
     }
@@ -103,7 +111,7 @@ public class ThroughPutTesting {
         public Path getBucketPath(Clock clock, Path basePath, T element){
             StringBuffer sb = new StringBuffer(basePath.toString()).append("/");
             String[] str = element.toString().split(",");
-            sb.append(str[2]).append("/").append(str[3]);
+            sb.append(str[2]).append("/").append(str[3]).append("/data");
             Path bucketPath = new Path(sb.toString());
             return bucketPath;
         }

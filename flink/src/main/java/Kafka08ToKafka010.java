@@ -40,7 +40,7 @@ public class Kafka08ToKafka010 {
     public void run(StreamExecutionEnvironment senv, FlinkKafkaConsumer08<String> kafkaIn08, FlinkKafkaProducer010<String> kafkaOut010) throws Exception{
         DataStream<String> img = senv.addSource(kafkaIn08);
         img.addSink(kafkaOut010);
-        img.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img1").setBucketer(new BasePathBucketer<>()));
+//        img.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img1").setBucketer(new BasePathBucketer<>()));
         senv.execute("img_in");
     }
 }

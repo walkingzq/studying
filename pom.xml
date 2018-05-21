@@ -58,7 +58,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>hdfs.HDFSTimeCount</mainClass>
+                            <mainClass>Img</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
