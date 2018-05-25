@@ -1,6 +1,7 @@
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.common.serialization.TypeInformationSerializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeHint;
@@ -14,6 +15,7 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
 import org.apache.flink.util.Collector;
 import partitioner.SimplePartitioner;
+import partitioner.StringPartitioner;
 
 import java.util.Properties;
 
@@ -23,13 +25,15 @@ import java.util.Properties;
 public class FlinkSimpleDemo {
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
+        senv.enableCheckpointing(1000);
+        senv.setRestartStrategy(new RestartStrategies.NoRestartStrategyConfiguration());
 
         //输入kafka信息（kafka010版本）
         Properties prop = new Properties();
         prop.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
-        prop.setProperty("zookeeper.connect", "10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1");
         prop.setProperty("group.id", "simpleDemo");
-        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.pic_todownload_ali_01", new SimpleStringSchema(), prop);
+        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("topic2", new SimpleStringSchema(), prop);
+        kafkaIn010.setStartFromLatest();
 
         //输出kafka信息
         String producerTopic = "basetest";
@@ -37,9 +41,9 @@ public class FlinkSimpleDemo {
         produce_prop.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
         TypeInformation<Tuple4<Long, Long, String, Integer>> typeInformation = TypeInformation.of(new TypeHint<Tuple4<Long, Long, String, Integer>>(){});
         ExecutionConfig ec = senv.getConfig();
-        ec.registerPojoType(Tuple4.class);
         TypeInformationSerializationSchema<Tuple4<Long, Long, String, Integer>> serializationSchema = new TypeInformationSerializationSchema<>(typeInformation,ec);
-        FlinkKafkaProducer010<Tuple4<Long, Long, String, Integer>> kafkaOut010 = new FlinkKafkaProducer010<>( producerTopic, serializationSchema, produce_prop, new SimplePartitioner<>());
+        FlinkKafkaProducer010<Tuple4<Long, Long, String, Integer>> kafkaOut010 = new FlinkKafkaProducer010<>( producerTopic, serializationSchema, produce_prop, new StringPartitioner<>());
+        kafkaOut010.setFlushOnCheckpoint(true);
 
 //        DataStream<Tuple2<Long,String>> source = senv.addSource(kafkaIn010).map(new MapFunction<String, Tuple2<Long, String>>() {
 //            @Override
@@ -65,7 +69,7 @@ public class FlinkSimpleDemo {
             public Tuple4 map(String value) throws Exception {
                 return new Tuple4<Long,Long,String,Integer>(System.currentTimeMillis(),System.currentTimeMillis(),value,1);
             }
-        });
+        }).returns(new TypeHint<Tuple4<Long, Long, String, Integer>>(){});
 
 //        DataStream<Tuple4<Long,Long,String,Integer>> output = wordcount.map(new MapFunction<Tuple3<Long, String, Integer>, Tuple4<Long, Long, String, Integer>>() {
 //            @Override

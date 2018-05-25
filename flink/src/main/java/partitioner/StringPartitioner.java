@@ -9,7 +9,7 @@ public class StringPartitioner<T> extends FlinkKafkaPartitioner<T>{
 
     @Override
     public int partition(T record, byte[] key, byte[] value, String targetTopic, int[] partitions) {
-        String str = (String) record;
+        String str =  record.toString();
         long sum = 0;
         for (char c:str.toCharArray()
              ) {

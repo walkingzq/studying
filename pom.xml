@@ -17,6 +17,7 @@
         <module>storm</module>
         <module>hadoop</module>
         <module>kafka</module>
+        <module>java</module>
     </modules>
 
     <dependencies>
@@ -58,7 +59,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>Img</mainClass>
+                            <mainClass>checkingout.delay.DelayDemo</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
