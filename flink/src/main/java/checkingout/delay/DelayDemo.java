@@ -5,6 +5,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -25,6 +26,7 @@ public class DelayDemo {
     public static void main(String[] args) throws Exception{
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
         senv.enableCheckpointing(5000);
+        senv.setStateBackend(new FsStateBackend("hdfs://emr-header-1/flink/checkpoints_zq"));
         senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(4, 10000));
 //        senv.getConfig().disableSysoutLogging();
         senv.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
@@ -67,7 +69,7 @@ public class DelayDemo {
         });
 
 //        output.addSink(kafkaOut010);
-        output.addSink(new BucketingSink<DelayEvent>("hdfs://emr-header-1/flink/testing/delay/ver2").setBucketer(new BasePathBucketer<>()));
+        output.addSink(new BucketingSink<DelayEvent>("hdfs://emr-header-1/home/flink/testing/delay/ver2/data").setBucketer(new BasePathBucketer<>()));
         try {
             senv.execute("delaytesting");
         }catch (Exception exc){

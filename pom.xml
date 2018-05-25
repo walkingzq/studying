@@ -59,7 +59,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>checkingout.delay.DelayDemo</mainClass>
+                            <mainClass>checkingout.exactlyOne.WindowWordCount</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
