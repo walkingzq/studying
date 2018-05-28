@@ -28,7 +28,6 @@ public class DelayDemo {
         senv.enableCheckpointing(5000);
         senv.setStateBackend(new FsStateBackend("hdfs://emr-header-1/flink/checkpoints_zq"));
         senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(4, 10000));
-//        senv.getConfig().disableSysoutLogging();
         senv.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
         Properties conProp = new Properties();
@@ -37,10 +36,10 @@ public class DelayDemo {
         FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.pic_todownload_ali_01", new SimpleStringSchema(), conProp);
         kafkaIn010.setStartFromEarliest();
 
-        Properties produProp = new Properties();
-        produProp.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
-        FlinkKafkaProducer010<DelayEvent> kafkaOut010 = new FlinkKafkaProducer010<DelayEvent>("delayTesting01", new DelayEventSchema(), produProp, new StringPartitioner<>());
-        kafkaOut010.setFlushOnCheckpoint(true);
+//        Properties produProp = new Properties();
+//        produProp.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
+//        FlinkKafkaProducer010<DelayEvent> kafkaOut010 = new FlinkKafkaProducer010<DelayEvent>("delayTesting01", new DelayEventSchema(), produProp, new StringPartitioner<>());
+//        kafkaOut010.setFlushOnCheckpoint(true);
 
         DataStream<DelayEventWithInTime> input = senv.addSource(kafkaIn010)
                 .flatMap(new FlatMapFunction<String, DelayEventWithInTime>() {
@@ -68,10 +67,9 @@ public class DelayDemo {
             }
         });
 
-//        output.addSink(kafkaOut010);
-        output.addSink(new BucketingSink<DelayEvent>("hdfs://emr-header-1/home/flink/testing/delay/ver2/data").setBucketer(new BasePathBucketer<>()));
+        output.addSink(new BucketingSink<DelayEvent>("hdfs://emr-header-1/home/flink/testing/delay/ver3/data").setBucketer(new BasePathBucketer<>()));
         try {
-            senv.execute("delaytesting");
+            senv.execute("delaytesting-ver3");
         }catch (Exception exc){
             throw exc;
         }

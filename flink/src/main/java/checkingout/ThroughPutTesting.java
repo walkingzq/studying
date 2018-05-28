@@ -54,7 +54,6 @@ public class ThroughPutTesting {
 
         //输出kafka信息（kafka010版本）
         String broker = "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092";
-//        String producerTopic = "throughput.testing.withFlinkTime";
         String producerTopic = "basetest";
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(broker, producerTopic, new SimpleStringSchema());
         kafkaOut010.setWriteTimestampToKafka(true);//将进入flink时间作为kafka记录的时间戳

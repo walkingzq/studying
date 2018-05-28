@@ -10,6 +10,7 @@ import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
 import org.apache.log4j.Logger;
+import partitioner.StringPartitioner;
 
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -22,8 +23,8 @@ public class Kafka010ToKafka010 {
 
     public static void main(String[] args) throws Exception{
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
-        senv.enableCheckpointing(1000);//启动checkpoint，间隔1ms
-        senv.setStateBackend(new FsStateBackend("hdfs://emr-header-1/flink/checkpoints_zq"));//设置stateBackend
+        senv.enableCheckpointing(5000);//启动checkpoint
+        senv.setStateBackend(new FsStateBackend("hdfs://emr-cluster/flink/checkpoints_zq"));//设置stateBackend
         senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.of(10, TimeUnit.SECONDS)));//设置重启策略，如果任务失败，会依据重启策略进行后续动作
         //默认情况下，一个flink作业的checkpoints将在job cancel时自动删除。如果想要保留这些checkpoints，按照如下两行设置即可。
         //注：设置为RETAIN_ON_CANCELLATION后flink不会自动删除checkpoints，如果不需要这些checkpoint是时需要手动删除
@@ -33,15 +34,15 @@ public class Kafka010ToKafka010 {
         //输入kafka信息（kafka010版本）
         Properties prop = new Properties();
         prop.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
-//        prop.setProperty("zookeeper.connect", "10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1");
         prop.setProperty("group.id", "img_copy_to_self");
         FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.pic_todownload_ali_01", new SimpleStringSchema(), prop);
         kafkaIn010.setStartFromGroupOffsets();
 
         //输出kafka信息
-        String broker = "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092";
         String producerTopic = "system.pic_todownload_ali_01";
-        FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(broker, producerTopic, new SimpleStringSchema());
+        Properties produce_prop = new Properties();
+        produce_prop.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
+        FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(producerTopic, new SimpleStringSchema(), produce_prop, new StringPartitioner<>());
         //以下两项设置外加checkpoint机制保证kafka producer为at least once语义
         //默认false，如果设置为true，在遇到写kafka错误时，flink仅仅会记录出错信息，而不会抛出异常并停止运行
         kafkaOut010.setLogFailuresOnly(false);
@@ -50,21 +51,9 @@ public class Kafka010ToKafka010 {
 
         Kafka010ToKafka010 kafka010ToKafka010 = new Kafka010ToKafka010();
         LOGGER.info("starting...");
-        kafka010ToKafka010.run(senv, kafkaIn010, kafkaOut010);
-    }
 
-
-    /**
-     *
-     * @param senv
-     * @param kafkaIn010
-     * @param kafkaOut010
-     * @throws Exception
-     */
-    public void run(StreamExecutionEnvironment senv, FlinkKafkaConsumer010<String> kafkaIn010, FlinkKafkaProducer010<String> kafkaOut010) throws Exception{
         DataStream<String> img_copy_to_self = senv.addSource(kafkaIn010);
         img_copy_to_self.addSink(kafkaOut010);
-        img_copy_to_self.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img2").setBucketer(new BasePathBucketer<>()));
         senv.execute("img_copy_to_self");
     }
 }
