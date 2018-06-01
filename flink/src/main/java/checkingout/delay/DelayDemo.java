@@ -24,22 +24,19 @@ import java.util.Properties;
  */
 public class DelayDemo {
     public static void main(String[] args) throws Exception{
+        String hdfs_path = args[0];
+        String topic = args[1];
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
-        senv.enableCheckpointing(5000);
-        senv.setStateBackend(new FsStateBackend("hdfs://emr-header-1/flink/checkpoints_zq"));
+        senv.enableCheckpointing(1000);
+        senv.setStateBackend(new FsStateBackend("hdfs://emr-cluster/flink/checkpoints_zq"));
         senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(4, 10000));
         senv.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
         Properties conProp = new Properties();
         conProp.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
-        conProp.setProperty("group.id", "delayTesting");
-        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.pic_todownload_ali_01", new SimpleStringSchema(), conProp);
+        conProp.setProperty("group.id", "reduce");
+        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>(topic, new SimpleStringSchema(), conProp);
         kafkaIn010.setStartFromEarliest();
-
-//        Properties produProp = new Properties();
-//        produProp.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
-//        FlinkKafkaProducer010<DelayEvent> kafkaOut010 = new FlinkKafkaProducer010<DelayEvent>("delayTesting01", new DelayEventSchema(), produProp, new StringPartitioner<>());
-//        kafkaOut010.setFlushOnCheckpoint(true);
 
         DataStream<DelayEventWithInTime> input = senv.addSource(kafkaIn010)
                 .flatMap(new FlatMapFunction<String, DelayEventWithInTime>() {
@@ -51,7 +48,6 @@ public class DelayDemo {
                         }
                     }
                 }).keyBy("value")
-//                .window(TumblingEventTimeWindows.of(Time.seconds(5)))
                 .reduce(new ReduceFunction<DelayEventWithInTime>() {
                     @Override
                     public DelayEventWithInTime reduce(DelayEventWithInTime value1, DelayEventWithInTime value2) throws Exception {
@@ -67,9 +63,9 @@ public class DelayDemo {
             }
         });
 
-        output.addSink(new BucketingSink<DelayEvent>("hdfs://emr-header-1/home/flink/testing/delay/ver3/data").setBucketer(new BasePathBucketer<>()));
+        output.addSink(new BucketingSink<DelayEvent>(hdfs_path).setBucketer(new BasePathBucketer<>()));
         try {
-            senv.execute("delaytesting-ver3");
+            senv.execute("reduce");
         }catch (Exception exc){
             throw exc;
         }

@@ -28,8 +28,8 @@ public class Kafka010ToKafka010 {
         senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.of(10, TimeUnit.SECONDS)));//设置重启策略，如果任务失败，会依据重启策略进行后续动作
         //默认情况下，一个flink作业的checkpoints将在job cancel时自动删除。如果想要保留这些checkpoints，按照如下两行设置即可。
         //注：设置为RETAIN_ON_CANCELLATION后flink不会自动删除checkpoints，如果不需要这些checkpoint是时需要手动删除
-//        CheckpointConfig checkpointConfig = senv.getCheckpointConfig();
-//        checkpointConfig.enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        CheckpointConfig checkpointConfig = senv.getCheckpointConfig();
+        checkpointConfig.enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
 
         //输入kafka信息（kafka010版本）
         Properties prop = new Properties();

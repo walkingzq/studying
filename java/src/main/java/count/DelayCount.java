@@ -11,7 +11,7 @@ import java.io.IOException;
  */
 public class DelayCount {
     public static void main(String[] args) throws Exception{
-        String fileName = "F:\\个人\\微博\\实时流框架测试\\flink测试结果\\延时测试\\reduce场景\\delay_results_ver2.csv";
+        String fileName = "F:\\个人\\微博\\实时流框架测试\\flink测试结果\\splitAndSelect\\total-counts.csv";
         try (FileReader fr = new FileReader(fileName)){
             long count = 0;
             long sumDelay = 0;

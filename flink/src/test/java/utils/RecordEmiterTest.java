@@ -4,6 +4,8 @@ package utils;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.sling.commons.json.JSONObject;
 
+import java.nio.charset.Charset;
+
 /**
  * Created by Zhao Qing on 2018/5/14.
  */
@@ -15,7 +17,7 @@ public class RecordEmiterTest {
 
     public static void main(String[] args) throws Exception{
 //        String str = "{\"service_id\":\"downloader_pic_hash\",\"download_url\":\"http://10.85.125.53/2018-5-15-18/6/006eJb74gy1frc6pi4ggpj33k02o0hdv.jpg\",\"idc\":\"\",\"pid\":\"006eJb74gy1frc6pi4ggpj33k02o0hdv\"}";
-        String str = "{\"service_id\":\"downloader\",\"download_url\":\"http://10.85.136.197/2018-5-15-18/9/006Q4REegy1frc7ov0fxjj30m80m8mz0.jpg\",\"idc\":\"gz\",\"pid\":\"006Q4REegy1frc7ov0fxjj30m80m8mz0\"}";
+//        String str = "{\"service_id\":\"downloader\",\"download_url\":\"http://10.85.136.197/2018-5-15-18/9/006Q4REegy1frc7ov0fxjj30m80m8mz0.jpg\",\"idc\":\"gz\",\"pid\":\"006Q4REegy1frc7ov0fxjj30m80m8mz0\"}";
 //        Tuple4<Long, Long, String, Integer> record = new Tuple4<>(System.currentTimeMillis(), System.currentTimeMillis(), str, 1);
 //        JSONObject jsonObject = new JSONObject(record.f2);
 //        System.out.println(jsonObject.get("pid"));
@@ -25,9 +27,19 @@ public class RecordEmiterTest {
 //        }
 //        System.out.println(sum);
 //        System.out.println(sum % 20);
-        String str0 = System.currentTimeMillis() + "," + str;
-        System.out.println(str0.substring(0,13));
-        System.out.println(str0.substring(14));
+//        String str0 = System.currentTimeMillis() + "," + str;
+//        System.out.println(str0.substring(0,13));
+//        System.out.println(str0.substring(14));
+//        String str = "{\"service_id\":\"downloader_pic_hash\",\"download_url\":\"http://10.85.125.54/2018-5-15-17/8/0075r328gy1frc6au2l1bj301c02dwea.jpg\",\"idc\":\"\",\"pid\":\"0075r328gy1frc6au2l1bj301c02dwea\"}";
+//        String str = "1526836496234,throughput_testing,1,1,{\"service_id\":\"downloader_pic_hash\",\"download_url\":\"http://10.85.125.54/2018-5-15-17/8/0075r328gy1frc6au2l1bj301c02dwea.jpg\",\"idc\":\"\",\"pid\":\"0075r328gy1frc6au2l1bj301c02dwea\"}";
+        String str = "1527232167767,1527232167767,stream,4991807";
+        byte[] bytes = str.getBytes(Charset.forName("UTF-8"));
+        for (byte b:bytes
+             ) {
+            System.out.print(b + " ");
+        }
+        System.out.println();
+        System.out.println(bytes.length);
     }
 
 }

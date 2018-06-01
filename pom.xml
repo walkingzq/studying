@@ -59,7 +59,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>Kafka010ToKafka010</mainClass>
+                            <mainClass>checkingout.delay.DelayDemo</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

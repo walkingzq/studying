@@ -34,7 +34,7 @@ public class SpiltAndSelectDemo {
         String hdfsDir = args[0] + "/ver" + versionId + "/data";
         LOGGER.info("hdfs主目录:" + hdfsDir);
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
-        senv.enableCheckpointing(5000);
+        senv.enableCheckpointing(1000);
         try {
             senv.setStateBackend(new FsStateBackend("hdfs://emr-header-1/flink/checkpoints_zq"));
         }catch (IOException exc){
@@ -66,6 +66,8 @@ public class SpiltAndSelectDemo {
                                 res.add("al");
                             }else if (jsonObject.get("idc").equals("gz")){
                                 res.add("gz");
+                            }else if (jsonObject.get("idc") != null){
+                                res.add("other");
                             }
                         }catch (JSONException exc){
                             LOGGER.error("解析json出错");
@@ -92,6 +94,14 @@ public class SpiltAndSelectDemo {
                     }
                 });
 
+        DataStream<EventWithInAndOutTime> idc_other = input.select("other")
+                .map(new MapFunction<EventWithInTime, EventWithInAndOutTime>() {
+                    @Override
+                    public EventWithInAndOutTime map(EventWithInTime value) throws Exception {
+                        return new EventWithInAndOutTime(value.getIn_time(), System.currentTimeMillis(), value.getValue());
+                    }
+                });
+
         DataStream<EventWithInAndOutTime> idc_jsonerr = input.select("json_error")
                 .map(new MapFunction<EventWithInTime, EventWithInAndOutTime>() {
                     @Override
@@ -103,6 +113,7 @@ public class SpiltAndSelectDemo {
 
         idc_al.addSink(new BucketingSink<EventWithInAndOutTime>(hdfsDir + "/al").setBucketer(new BasePathBucketer<>()));
         idc_gz.addSink(new BucketingSink<EventWithInAndOutTime>(hdfsDir + "/gz").setBucketer(new BasePathBucketer<>()));
+        idc_other.addSink(new BucketingSink<EventWithInAndOutTime>(hdfsDir + "/other").setBucketer(new BasePathBucketer<>()));
         idc_jsonerr.addSink(new BucketingSink<EventWithInAndOutTime>(hdfsDir + "/json_err").setBucketer(new BasePathBucketer<>()));
         LOGGER.info("flink job will start.");
         senv.execute("splitAndSelect-ver" + versionId);
