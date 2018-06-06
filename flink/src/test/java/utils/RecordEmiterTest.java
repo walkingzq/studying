@@ -1,45 +1,73 @@
 package utils;
 
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.sling.commons.json.JSONObject;
+import realtime_count.SimpleDemo;
 
 import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by Zhao Qing on 2018/5/14.
  */
 public class RecordEmiterTest {
 
+    private static final Pattern p_insert_type = Pattern.compile("(insert_type:(\\d*))");
+
+    private static final Pattern p_luicode = Pattern.compile("(luicode:(\\d*))");
+
+    private static final Pattern p_uicode = Pattern.compile("(uicode:(\\d*))");
+
     public void job() throws Exception {
         new RecordEmiter().job(100);
     }
 
     public static void main(String[] args) throws Exception{
-//        String str = "{\"service_id\":\"downloader_pic_hash\",\"download_url\":\"http://10.85.125.53/2018-5-15-18/6/006eJb74gy1frc6pi4ggpj33k02o0hdv.jpg\",\"idc\":\"\",\"pid\":\"006eJb74gy1frc6pi4ggpj33k02o0hdv\"}";
-//        String str = "{\"service_id\":\"downloader\",\"download_url\":\"http://10.85.136.197/2018-5-15-18/9/006Q4REegy1frc7ov0fxjj30m80m8mz0.jpg\",\"idc\":\"gz\",\"pid\":\"006Q4REegy1frc7ov0fxjj30m80m8mz0\"}";
-//        Tuple4<Long, Long, String, Integer> record = new Tuple4<>(System.currentTimeMillis(), System.currentTimeMillis(), str, 1);
-//        JSONObject jsonObject = new JSONObject(record.f2);
-//        System.out.println(jsonObject.get("pid"));
-//        long sum = 0;
-//        for (char c : jsonObject.get("pid").toString().toCharArray()){
-//            sum += c;
-//        }
-//        System.out.println(sum);
-//        System.out.println(sum % 20);
-//        String str0 = System.currentTimeMillis() + "," + str;
-//        System.out.println(str0.substring(0,13));
-//        System.out.println(str0.substring(14));
-//        String str = "{\"service_id\":\"downloader_pic_hash\",\"download_url\":\"http://10.85.125.54/2018-5-15-17/8/0075r328gy1frc6au2l1bj301c02dwea.jpg\",\"idc\":\"\",\"pid\":\"0075r328gy1frc6au2l1bj301c02dwea\"}";
-//        String str = "1526836496234,throughput_testing,1,1,{\"service_id\":\"downloader_pic_hash\",\"download_url\":\"http://10.85.125.54/2018-5-15-17/8/0075r328gy1frc6au2l1bj301c02dwea.jpg\",\"idc\":\"\",\"pid\":\"0075r328gy1frc6au2l1bj301c02dwea\"}";
-        String str = "1527232167767,1527232167767,stream,4991807";
-        byte[] bytes = str.getBytes(Charset.forName("UTF-8"));
-        for (byte b:bytes
-             ) {
-            System.out.print(b + " ");
-        }
+        String str = "2018-06-06 16:08:28\t117.174.156.70\t2736320532\t14000116\t419697\t1\t1\t4247161350829104\t2135487301\tdomain_id=>4247161350829104,is_auto=>0,spr=>from:1084395010;wm:9856_0004;luicode:10000002;uicode:10000002;ext:insert_type:5|oriuicode:10000001_10000002;aid:01AqF3wDdryf8HoERGNNUeGx1z8cjSDMW_DRbVmnX8QDCY-XU.;lang:zh_CN;networktype:wifi;featurecode:10000001;ua:vivo-vivo Y31__weibo__8.4.3__android__android5.1.1,object_type=>comment,mid=>4247160558023726,object_id=>4247161350829104";
+        long time = toTimestamp(str);
+        SimpleDemo.WindowWordCountEvent wwce = new SimpleDemo.WindowWordCountEvent(time, time, SimpleDemo.getRecordType(str), 1);
+        System.out.println(wwce.toString());
         System.out.println();
-        System.out.println(bytes.length);
+        System.out.println(wwce.toJson());
+        String[] strs = str.split("\\t");
+        String extend = strs[9];
+        System.out.println(extend);
+//        Matcher m1 = p_insert_type.matcher(extend);
+//        if (m1.find()){
+//            System.out.println(m1.group(1));
+//            System.out.println(m1.group(2));
+//        }
+//
+//        Matcher m2 = p_luicode.matcher(extend);
+//        if (m2.find()){
+//            System.out.println(m2.group(1));
+//            System.out.println(m2.group(2));
+//        }
+//
+//        Matcher m3 = p_uicode.matcher(extend);
+//        if (m3.find()){
+//            System.out.println(m3.group(1));
+//            System.out.println(m3.group(2));
+//        }
+
     }
 
+
+
+    public static long toTimestamp(String str){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        try {
+            date = simpleDateFormat.parse(str);
+        }catch (ParseException exc){
+            exc.printStackTrace();
+        }
+        return date.getTime() / 1000;
+    }
 }

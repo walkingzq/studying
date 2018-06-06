@@ -18,6 +18,7 @@
         <module>hadoop</module>
         <module>kafka</module>
         <module>java</module>
+        <module>kafka072</module>
     </modules>
 
     <dependencies>
@@ -59,7 +60,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>checkingout.delay.DelayDemo</mainClass>
+                            <mainClass>realtime_count.SimpleDemo</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
