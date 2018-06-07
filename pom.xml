@@ -61,7 +61,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>Img</mainClass>
+                            <mainClass>realtime_count.SimpleDemo</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

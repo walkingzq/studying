@@ -11,8 +11,13 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.triggers.Trigger;
+import org.apache.flink.streaming.api.windowing.triggers.TriggerResult;
+import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
+import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.connectors.fs.bucketing.BasePathBucketer;
 import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
@@ -89,20 +94,56 @@ public class SimpleDemo {
                 .aggregate(new WindowWordCountAggregate());
 
 //        DataStream<RealTimeIndex> indexAggregate = windowWordCount.keyBy("start_time")
-//                .windowAll()
-//                .aggregate();//TODO:Trigger定义
+//                .window(GlobalWindows.create())
+//                .trigger(new CustomTrigger())
+//                .aggregate(new RealTimeIndexAggregate());//TODO:Trigger定义
+//
+//        DataStream<String> output = indexAggregate.map(new MapFunction<RealTimeIndex, String>() {
+//            @Override
+//            public String map(RealTimeIndex value) throws Exception {
+//                return value.toJson();
+//            }
+//        });
 
-        DataStream<String> output = windowWordCount.map(new MapFunction<WindowWordCountEvent, String>() {
+        DataStream<String> output_mul = windowWordCount.map(new MapFunction<WindowWordCountEvent, String>() {
             @Override
             public String map(WindowWordCountEvent value) throws Exception {
                 return value.toJson();
             }
         });
 
-        output.addSink(new BucketingSink<String>(hdfs_path).setBucketer(new BasePathBucketer<>()));
+        output_mul.addSink(new BucketingSink<String>(hdfs_path).setBucketer(new BasePathBucketer<>()));
+
+//        output.addSink(new BucketingSink<String>(hdfs_path).setBucketer(new BasePathBucketer<>()));
 
         senv.execute("windowTypeCount");
 
+    }
+
+
+    /**
+     * 自定义Trigger
+     */
+    public static class CustomTrigger extends Trigger{
+        @Override
+        public TriggerResult onElement(Object element, long timestamp, Window window, TriggerContext ctx) throws Exception {
+            return TriggerResult.FIRE;
+        }
+
+        @Override
+        public TriggerResult onProcessingTime(long time, Window window, TriggerContext ctx) throws Exception {
+            return TriggerResult.CONTINUE;
+        }
+
+        @Override
+        public TriggerResult onEventTime(long time, Window window, TriggerContext ctx) throws Exception {
+            return TriggerResult.CONTINUE;
+        }
+
+        @Override
+        public void clear(Window window, TriggerContext ctx) throws Exception {
+
+        }
     }
 
     public static long toTimestamp(String str){
@@ -171,6 +212,9 @@ public class SimpleDemo {
         return OTHER;
     }
 
+    /**
+     * 窗口词频统计
+     */
     public static class WindowWordCountAggregate implements AggregateFunction<WindowWordCountEvent, WindowWordCountEvent, WindowWordCountEvent> {
         @Override
         public WindowWordCountEvent createAccumulator() {
@@ -191,6 +235,36 @@ public class SimpleDemo {
         @Override
         public WindowWordCountEvent merge(WindowWordCountEvent a, WindowWordCountEvent b) {
             return new WindowWordCountEvent(Math.min(a.getStart_time(), b.getStart_time()), Math.max(a.getEnd_time(),b.getEnd_time()),a.getWord(),a.getCount() + b.getCount());
+        }
+    }
+
+
+    /**
+     * 时间窗口合并
+     */
+    public static class RealTimeIndexAggregate implements AggregateFunction<WindowWordCountEvent, RealTimeIndex, RealTimeIndex>{
+        @Override
+        public RealTimeIndex createAccumulator() {
+            return new RealTimeIndex();
+        }
+
+        @Override
+        public RealTimeIndex add(WindowWordCountEvent value, RealTimeIndex accumulator) {
+            accumulator.setStart_time(value.getStart_time());
+            accumulator.setEnd_time(value.getEnd_time());
+            accumulator.putIndex(value.getWord(), value.getCount());
+            return accumulator;
+        }
+
+        @Override
+        public RealTimeIndex getResult(RealTimeIndex accumulator) {
+            return accumulator;
+        }
+
+        @Override
+        public RealTimeIndex merge(RealTimeIndex a, RealTimeIndex b) {
+            a.addIndex(b.getIndexs());
+            return a;
         }
     }
 
