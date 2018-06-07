@@ -1,5 +1,6 @@
 package realtime_count;
 
+import com.sun.javafx.collections.MappingChange;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
@@ -19,8 +20,7 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import javax.annotation.Nullable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Properties;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,7 +54,7 @@ public class SimpleDemo {
 
         Properties conProp = new Properties();
         conProp.setProperty("bootstrap.servers", "10.77.29.163:9092,10.77.29.164:9092,10.77.31.210:9092,10.77.31.211:9092,10.77.31.212:9092,10.77.29.219:9092,10.77.29.220:9092,10.77.29.221:9092,10.77.29.222:9092,10.77.29.223:9092,10.77.29.224:9092,10.77.29.225:9092");
-        conProp.setProperty("group.id", "windowWordCount-ver4");//TODO:group_id 待确认 @陈超
+        conProp.setProperty("group.id", "business_engine_effect");
         FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.weibo_interact", new SimpleStringSchema(), conProp);
         kafkaIn010.setStartFromGroupOffsets();
         kafkaIn010.assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<String>() {
@@ -85,8 +85,12 @@ public class SimpleDemo {
                 return new WindowWordCountEvent(time, time, getRecordType(value), 1);
             }
         }).keyBy("word")
-                .window(TumblingEventTimeWindows.of(Time.seconds(10 * 60)))
+                .window(TumblingEventTimeWindows.of(Time.seconds(10 * 60)))//窗口大小:10min
                 .aggregate(new WindowWordCountAggregate());
+
+//        DataStream<RealTimeIndex> indexAggregate = windowWordCount.keyBy("start_time")
+//                .windowAll()
+//                .aggregate();//TODO:Trigger定义
 
         DataStream<String> output = windowWordCount.map(new MapFunction<WindowWordCountEvent, String>() {
             @Override
@@ -254,6 +258,74 @@ public class SimpleDemo {
                     toDateStr(end_time) + "," +
                     word + "," +
                     count;
+        }
+    }
+
+    public static class RealTimeIndex{
+        private long start_time;
+
+        private long end_time;
+
+        private Map<String, Long> indexs;
+
+        public RealTimeIndex(){
+            this.indexs = new HashMap<>();
+        }
+
+        public RealTimeIndex(long start_time, long end_time, Map<String, Long> indexs) {
+            this.start_time = start_time;
+            this.end_time = end_time;
+            this.indexs = indexs;
+        }
+
+        public long getStart_time() {
+            return start_time;
+        }
+
+        public void setStart_time(long start_time) {
+            this.start_time = start_time;
+        }
+
+        public long getEnd_time() {
+            return end_time;
+        }
+
+        public void setEnd_time(long end_time) {
+            this.end_time = end_time;
+        }
+
+        public Map<String, Long> getIndexs() {
+            return indexs;
+        }
+
+        public void setIndexs(Map<String, Long> indexs) {
+            this.indexs = indexs;
+        }
+
+        public void putIndex(String index, Long count){
+            this.indexs.put(index, count);
+        }
+
+        public void addIndex(Map<String, Long> indexsToAdd){
+            for (Map.Entry<String, Long> entry:indexsToAdd.entrySet()
+                 ) {
+                this.indexs.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        public String toJson(){
+            StringBuilder sb = new StringBuilder();
+            sb.append("{\"start_time\":\"" + toDateStr(this.start_time)).append("\",")
+                    .append("\"end_time\":\"" + toDateStr(this.end_time)).append("\",");
+            Set<Map.Entry<String, Long>> entrySet = this.indexs.entrySet();
+            int i = 0 , len = entrySet.size();
+            for (Map.Entry<String, Long> entry : entrySet){
+                sb.append("\"" + entry.getKey() + "\":\"" + entry.getValue());
+                if (i < len - 1){sb.append("\",");}
+                else {sb.append("\"}");}
+                i++;
+            }
+            return sb.toString();
         }
     }
 }

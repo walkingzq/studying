@@ -1,9 +1,6 @@
 package utils;
 
-
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
-import org.apache.flink.api.java.tuple.Tuple4;
-import org.apache.sling.commons.json.JSONObject;
+import org.junit.Test;
 import realtime_count.SimpleDemo;
 
 import java.nio.charset.Charset;
@@ -23,6 +20,7 @@ public class RecordEmiterTest {
     private static final Pattern p_luicode = Pattern.compile("(luicode:(\\d*))");
 
     private static final Pattern p_uicode = Pattern.compile("(uicode:(\\d*))");
+
 
     public void job() throws Exception {
         new RecordEmiter().job(100);

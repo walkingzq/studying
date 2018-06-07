@@ -23,20 +23,19 @@ public class Img {
 
         //输入kafka信息（kafka010版本）
         Properties prop = new Properties();
-        prop.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
-        prop.setProperty("zookeeper.connect", "10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1");
-        prop.setProperty("group.id", "img_copy_to_self");
-        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.pic_todownload_ali_01", new SimpleStringSchema(), prop);
+        prop.setProperty("bootstrap.servers", "10.85.115.98:9092,10.85.115.99:9092,10.85.115.100:9092,10.85.115.101:9092,10.85.115.102:9092,10.85.115.103:9092,10.85.115.104:9092,10.85.115.105:9092,10.85.115.106:9092,10.85.115.107:9092,10.85.115.108:9092,10.85.115.109:9092,10.85.115.110:9092,10.85.115.111:9092,10.85.115.112:9092,10.85.115.113:9092");
+//        prop.setProperty("zookeeper.connect", "10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1");
+        prop.setProperty("group.id", "kafka_system_img_self");
+        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.img", new SimpleStringSchema(), prop);
         kafkaIn010.setStartFromEarliest();//从最早开始消费
 
         //输出kafka信息
-        String producerTopic = "system.pic_todownload_ali_01";
+        String producerTopic = "system.img";
         Properties produce_prop = new Properties();
-        produce_prop.setProperty("bootstrap.servers", "10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092");
+        produce_prop.setProperty("bootstrap.servers", "10.85.115.98:9092,10.85.115.99:9092,10.85.115.100:9092,10.85.115.101:9092,10.85.115.102:9092,10.85.115.103:9092,10.85.115.104:9092,10.85.115.105:9092,10.85.115.106:9092,10.85.115.107:9092,10.85.115.108:9092,10.85.115.109:9092,10.85.115.110:9092,10.85.115.111:9092,10.85.115.112:9092,10.85.115.113:9092");
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(producerTopic, new SimpleStringSchema(), produce_prop, new StringPartitioner<>());
         kafkaOut010.setFlushOnCheckpoint(true);
 
-//        int num = args[0] == null ? 5 : Integer.parseInt(args[0]);
         int num = Integer.MAX_VALUE;
         img.run(senv,kafkaIn010,kafkaOut010,num);
     }
@@ -63,6 +62,6 @@ public class Img {
         });
         stream.addSink(kafkaOut010);
 //        img_copy_to_self.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img2").setBucketer(new BasePathBucketer<>()));
-        senv.execute("img");
+        senv.execute("kafka_system_img_self");
     }
 }
