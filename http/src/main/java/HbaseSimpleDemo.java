@@ -22,26 +22,26 @@ import java.util.Map;
  */
 public class HbaseSimpleDemo {
     public static void main(String[] args) throws Exception{
-//        String res = query("experimental_results", "realtime_index_count", args[0]);
-//        System.out.println("result:" + res);
-        System.out.println("starting...");
-        write();
-        System.out.println();
-        System.out.println();
-        get();
-        System.out.println();
-        System.out.println("ending....");
+        String res = query("experimental_results", "realtime_index_count", "1528686600");
+        System.out.println(res);
+//        System.out.println("starting...");
+//        write();
+//        System.out.println();
+//        System.out.println();
+//        get();
+//        System.out.println();
+//        System.out.println("ending....");
     }
 
     public synchronized static void write(){
         CloseableHttpClient httpClient = HttpClients.createDefault();
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("business", "case_test"));
+        params.add(new BasicNameValuePair("business", "experimental_results"));
         params.add(new BasicNameValuePair("keyId", "hbase_zq"));
         params.add(new BasicNameValuePair("timestamp", "1528084116"));
         params.add(new BasicNameValuePair("value", "hello"));
         UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Charset.forName("utf8"));
-        HttpPost httpPost = new HttpPost("http://controlcenter.ds.sina.com.cn/waic/hbase/case/insert");
+        HttpPost httpPost = new HttpPost("http://10.77.29.74:8080/waic/hbase/case/insert");
         httpPost.setEntity(entity);
         CloseableHttpResponse httpResponse = null;
         try {
@@ -62,7 +62,7 @@ public class HbaseSimpleDemo {
 
     public synchronized static String get(){
         CloseableHttpClient httpClient = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet("http://controlcenter.ds.sina.com.cn/waic/hbase/case/query?business=case_test&keyId=hbase_zq&timestamp=1528084116");
+        HttpGet httpGet = new HttpGet("http://10.77.29.74:8080/waic/hbase/case/query?business=experimental_results&keyId=hbase_zq&timestamp=1528084116");
         CloseableHttpResponse httpResponse = null;
         String res = null;
         try {
@@ -84,7 +84,7 @@ public class HbaseSimpleDemo {
 
     public static String query(String business, String keyId, String timestamp){
         CloseableHttpClient httpClient = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet("http://controlcenter.ds.sina.com.cn/waic/hbase/case/query?business=" + business + "&keyId=" + keyId + "&timestamp=" + timestamp);
+        HttpGet httpGet = new HttpGet("http://10.77.29.74:8080/waic/hbase/case/query?business=" + business + "&keyId=" + keyId + "&timestamp=" + timestamp);
         CloseableHttpResponse httpResponse = null;
         String res = null;
         try {

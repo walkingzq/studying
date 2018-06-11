@@ -57,29 +57,35 @@ public class SimpleDemo {
 
     private static final String OTHER = "other";//其他
 
-    private static final Pattern p_insert_type = Pattern.compile("(insert_type:(\\d*))");
+    private static final Pattern p_insert_type = Pattern.compile("(insert_type:(\\d*))");//insert_type字段捕获正则表达式
 
-    private static final Pattern p_luicode = Pattern.compile("(luicode:(\\d*))");
+    private static final Pattern p_luicode = Pattern.compile("(luicode:(\\d*))");//luicode字段捕获正则表达式
 
-    private static final Pattern p_uicode = Pattern.compile("(uicode:(\\d*))");
+    private static final Pattern p_uicode = Pattern.compile("(uicode:(\\d*))");//uicode字段捕获正则表达式
 
-    private static final Pattern p_timestamp = Pattern.compile("\\{\"start_time\":\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})");
+    private static final Pattern p_timestamp = Pattern.compile("\\{\"start_time\":\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})");//start_time捕获正则表达式
 
+    /**
+     * 程序入口
+     * @param args （输入一个hdfs路径，作为实时指标统计的备份）
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception{
         String hdfs_path = args[0];
 
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
-        senv.enableCheckpointing(5000);
+        senv.enableCheckpointing(5000);//checkpoint间隔:5秒
         senv.setStateBackend(new FsStateBackend("hdfs://emr-cluster/flink/stateBackend"));
-        senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(4, 10000));
-        senv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(4, 10000));//重启策略：如果flink作业失败，flink将自动回退到最近的checkpoint并按照这里设置的重启次数和重启间隔进行作业重启
+        senv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);//设定flink内部运算所采用的时间为eventtime
 
+        //输入kafka topic信息（topic名:system.weibo_interact，group.id:business_engine_effect）
         Properties conProp = new Properties();
         conProp.setProperty("bootstrap.servers", "10.77.29.163:9092,10.77.29.164:9092,10.77.31.210:9092,10.77.31.211:9092,10.77.31.212:9092,10.77.29.219:9092,10.77.29.220:9092,10.77.29.221:9092,10.77.29.222:9092,10.77.29.223:9092,10.77.29.224:9092,10.77.29.225:9092");
         conProp.setProperty("group.id", "business_engine_effect");
         FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.weibo_interact", new SimpleStringSchema(), conProp);
-        kafkaIn010.setStartFromGroupOffsets();
-        kafkaIn010.assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<String>() {
+        kafkaIn010.setStartFromGroupOffsets();//从group offset处开始消费
+        kafkaIn010.assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<String>() {//为每条记录设定eventtime和watermark
             private final long maxOutOdOrderTime = 3500;
             private long currentMaxTimestamp;
 
@@ -98,9 +104,11 @@ public class SimpleDemo {
         });
 
 
-        DataStream<String> input = senv.addSource(kafkaIn010);
+        //开始数据流处理逻辑
+        DataStream<String> input = senv.addSource(kafkaIn010);//从kafka接入数据
 
-        DataStream<WindowWordCountEvent> windowWordCount = input.map(new MapFunction<String, WindowWordCountEvent>() {
+        //窗口统计
+        DataStream<WindowWordCountEvent> windowWordCount = input.map(new MapFunction<String, WindowWordCountEvent>() {//按照指定规则将每条记录映射为要统计的记录类别（本例中有四类：fwd、cmt、lk和other）
             @Override
             public WindowWordCountEvent map(String value) throws Exception {
                 long time = toTimestamp(value.split("\\t")[0]);
@@ -110,32 +118,17 @@ public class SimpleDemo {
                 }
                 return windowWordCountEvent;
             }
-        }).keyBy("word")
+        }).keyBy("word")//按Word字段进行逻辑分区
                 .window(TumblingEventTimeWindows.of(Time.minutes(10)))//窗口大小:10min
-                .aggregate(new WindowWordCountAggregate());
+                .aggregate(new WindowWordCountAggregate());//聚合一个窗口内的记录
 
+        //窗口指标聚合--汇总一个窗口内统计的所有指标
         DataStream<RealTimeIndex> indexAggregate = windowWordCount.keyBy("start_time")
                 .window(GlobalWindows.create())
                 .trigger(new CustomTrigger())
                 .aggregate(new RealTimeIndexAggregate());
-//                .assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<RealTimeIndex>(){
-//                    private final long maxOutOdOrderTime = 500;
-//                    private long currentMaxTimestamp;
-//
-//                    @Nullable
-//                    @Override
-//                    public Watermark getCurrentWatermark() {
-//                        return new Watermark(currentMaxTimestamp - maxOutOdOrderTime);
-//                    }
-//
-//                    @Override
-//                    public long extractTimestamp(RealTimeIndex element, long previousElementTimestamp) {
-//                        long timestamp = element.getStart_time();
-//                        currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp);
-//                        return timestamp;
-//                    }
-//                });
 
+        //汇总指标输出
         DataStream<String> output = indexAggregate.map(new MapFunction<RealTimeIndex, String>() {
             @Override
             public String map(RealTimeIndex value) throws Exception {
@@ -143,6 +136,7 @@ public class SimpleDemo {
             }
         });
 
+        //单项指标输出
         DataStream<String> output_mul = windowWordCount.map(new MapFunction<WindowWordCountEvent, String>() {
             @Override
             public String map(WindowWordCountEvent value) throws Exception {
@@ -150,11 +144,11 @@ public class SimpleDemo {
             }
         });
 
-        output_mul.addSink(new BucketingSink<String>(hdfs_path + "/mul").setBucketer(new BasePathBucketer<>()));
+        output_mul.addSink(new BucketingSink<String>(hdfs_path + "/mul").setBucketer(new BasePathBucketer<>()));//写入hdfs
 
-        output.addSink(new BucketingSink<String>(hdfs_path + "/total").setBucketer(new BasePathBucketer<>()));
+        output.addSink(new BucketingSink<String>(hdfs_path + "/total").setBucketer(new BasePathBucketer<>()));//写入hdfs
 
-        output.addSink(new HttpSink<String>("case_test", "realtime_index_count"));
+        output.addSink(new HttpSink<String>("experimental_results", "realtime_index_count"));//写入hbase
         senv.execute("windowTypeCount");
 
     }
@@ -214,7 +208,7 @@ public class SimpleDemo {
          */
         private void createConnection() throws IOException{
             httpClient = HttpClients.createDefault();
-            httpPost = new HttpPost("http://controlcenter.ds.sina.com.cn/waic/hbase/case/insert");
+            httpPost = new HttpPost("http://10.77.29.74:8080/waic/hbase/case/insert");
         }
 
         @Override
@@ -231,7 +225,7 @@ public class SimpleDemo {
                 if (m.find()){
                     timstamp = toTimestamp(m.group(1));
                 }
-                params.add(new BasicNameValuePair("timestamp", String.valueOf(timstamp)));
+                params.add(new BasicNameValuePair("timestamp", String.valueOf(timstamp / 1000)));
                 params.add(new BasicNameValuePair("value", str));
                 entity = new UrlEncodedFormEntity(params, Charset.forName("utf8"));
                 httpPost.setEntity(entity);
@@ -241,7 +235,6 @@ public class SimpleDemo {
                     System.out.println("insert res:" + EntityUtils.toString(httpEntity));//打印返回结果
                 }catch (IOException exc){
                     System.out.println("error in http:" + exc.getMessage());
-//                exc.printStackTrace();
                 }
             }
         }
@@ -268,7 +261,7 @@ public class SimpleDemo {
         public TriggerResult onElement(Object element, long timestamp, Window window, TriggerContext ctx) throws Exception {
             WindowWordCountEvent windowWordCountEvent = (WindowWordCountEvent) element;
             if (windowWordCountEvent.getWord().equals("other")) {
-                ctx.registerEventTimeTimer(timestamp + 600 * 1000);
+                ctx.registerEventTimeTimer(timestamp + 600 * 1000);//注册一个eventime定时器，当eventtime为timestamp + 600 * 1000时执行onEventTime()方法
             }
             return TriggerResult.CONTINUE;
         }
@@ -307,7 +300,7 @@ public class SimpleDemo {
     }
 
     /**
-     *
+     *将一个timestamp(ms级)转换成固定格式的时间字符串（时间格式：yyyy-MM-dd HH:mm:ss）
      * @param timestamp
      * @return
      */
@@ -317,12 +310,13 @@ public class SimpleDemo {
     }
 
     /**
-     * 记录标记
+     * 根据规则将一条记录映射成一个类别字符串
      * @param str
-     * @return
+     * @return 记录类别（本例中有四类：fwd、cmt、lk和other）
      */
     public static String getRecordType(String str){
         /*
+        记录的字段说明：
         0 time
         1 ip
         2 uid
@@ -338,7 +332,7 @@ public class SimpleDemo {
         String uid = strs[2];//uid
         String groupId = "_5_null";//groupId
         if (uid.length() > 5){
-            groupId = "_5_" + uid.charAt(uid.length() - 5);
+            groupId = "_5_" + uid.charAt(uid.length() - 5);//设定group_id
         }
         String bhv_code = strs[3];//hbv_code
         String mode = strs[5];//mode
@@ -377,7 +371,7 @@ public class SimpleDemo {
     }
 
     /**
-     * 窗口词频统计
+     * 窗口内单项指标统计
      */
     public static class WindowWordCountAggregate implements AggregateFunction<WindowWordCountEvent, WindowWordCountEvent, WindowWordCountEvent> {
         @Override
@@ -389,9 +383,6 @@ public class SimpleDemo {
         public WindowWordCountEvent add(WindowWordCountEvent value, WindowWordCountEvent accumulator) {
             if (accumulator.getStart_time() == 0){return value;}
             WindowWordCountEvent res = new WindowWordCountEvent(Math.min(value.getStart_time(), accumulator.getStart_time()), Math.max(value.getEnd_time(),accumulator.getEnd_time()),value.getWord(), value.getCount() + accumulator.getCount());
-//            if (res.getWord().equals("lk") || res.getWord().equals("cmt") || res.getWord().equals("fwd")){
-//                System.out.println("add" + res.toJson());
-//            }
             return res;
         }
 
@@ -401,7 +392,6 @@ public class SimpleDemo {
             long n = timestamp / 600000;
             long start_time = 600 * 1000 * n;
             WindowWordCountEvent result = new WindowWordCountEvent(start_time, start_time + 599000, accumulator.getWord(), accumulator.getCount());
-//            System.out.println("getResult: " + accumulator.toJson() + " " + result.toJson());
             return result;
         }
 
@@ -414,7 +404,7 @@ public class SimpleDemo {
 
 
     /**
-     * 时间窗口合并
+     * 窗口内多个指标聚合成一个
      */
     public static class RealTimeIndexAggregate implements AggregateFunction<WindowWordCountEvent, RealTimeIndex, RealTimeIndex>{
         @Override
@@ -442,6 +432,9 @@ public class SimpleDemo {
         }
     }
 
+    /**
+     * 单项指标统计的event
+     */
     public static class WindowWordCountEvent{
         private long start_time;
 
@@ -509,6 +502,10 @@ public class SimpleDemo {
         }
     }
 
+
+    /**
+     * 汇总指标统计的event
+     */
     public static class RealTimeIndex{
         private long start_time;
 
@@ -550,10 +547,19 @@ public class SimpleDemo {
             this.indexs = indexs;
         }
 
+        /**
+         * 将传入的键值put到实例对象的指标map中
+         * @param index
+         * @param count
+         */
         public void putIndex(String index, Long count){
             this.indexs.put(index, count);
         }
 
+        /**
+         * 将传入的指标map加入实例对象的指标map中
+         * @param indexsToAdd
+         */
         public void addIndex(Map<String, Long> indexsToAdd){
             for (Map.Entry<String, Long> entry:indexsToAdd.entrySet()
                  ) {
@@ -561,6 +567,10 @@ public class SimpleDemo {
             }
         }
 
+        /**
+         * 将实例对象转换成一个json字符串
+         * @return json字符串
+         */
         public String toJson(){
             StringBuilder sb = new StringBuilder();
             sb.append("{\"start_time\":\"" + toDateStr(this.start_time)).append("\",")
