@@ -61,7 +61,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>realtime_count.SimpleDemo</mainClass>
+                            <mainClass>HbaseSimpleDemo</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

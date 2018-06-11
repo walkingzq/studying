@@ -1,6 +1,7 @@
+package realtime_count;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -13,28 +14,20 @@ import org.apache.http.util.EntityUtils;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Create by Zhao Qing on 2018/6/4
+ * Created by Zhao Qing on 2018/6/9.
  */
-public class HbaseSimpleDemo {
-    public static void main(String[] args) throws Exception{
-        write();
-        System.out.println();
-        System.out.println();
-        get();
-    }
+public class HbaseHelper {
 
-    public static void write(){
+    public static void insert(String business, String keyId, long timestamp, String value){
         CloseableHttpClient httpClient = HttpClients.createDefault();
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("business", "case_test"));
-        params.add(new BasicNameValuePair("keyId", "hbase_zq"));
-        params.add(new BasicNameValuePair("timestamp", "1528084116"));
-        params.add(new BasicNameValuePair("value", "hello"));
+        params.add(new BasicNameValuePair("business", business));
+        params.add(new BasicNameValuePair("keyId", keyId));
+        params.add(new BasicNameValuePair("timestamp", String.valueOf(timestamp)));
+        params.add(new BasicNameValuePair("value", value));
         UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, Charset.forName("utf8"));
         HttpPost httpPost = new HttpPost("http://controlcenter.ds.sina.com.cn/waic/hbase/case/insert");
         httpPost.setEntity(entity);
@@ -42,7 +35,7 @@ public class HbaseSimpleDemo {
         try {
             httpResponse = httpClient.execute(httpPost);
             HttpEntity httpEntity = httpResponse.getEntity();
-            System.out.println(EntityUtils.toString(httpEntity));
+            System.out.println("insert res:" + EntityUtils.toString(httpEntity));//打印返回结果
         }catch (IOException exc){
             exc.printStackTrace();
         }finally {
@@ -55,15 +48,15 @@ public class HbaseSimpleDemo {
         }
     }
 
-    public static String get(){
+    public static String query(String business, String keyId, String timestamp){
         CloseableHttpClient httpClient = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet("http://controlcenter.ds.sina.com.cn/waic/hbase/case/query?business=case_test&keyId=hbase_zq&timestamp=1528084116");
+        HttpGet httpGet = new HttpGet("http://controlcenter.ds.sina.com.cn/waic/hbase/case/query?business=" + business + "&keyId=" + keyId + "&timestamp=" + timestamp);
         CloseableHttpResponse httpResponse = null;
         String res = null;
         try {
             httpResponse = httpClient.execute(httpGet);
             HttpEntity httpEntity = httpResponse.getEntity();
-            System.out.println(EntityUtils.toString(httpEntity));
+            res = EntityUtils.toString(httpEntity);//获得返回结果
         }catch (IOException exc){
             exc.printStackTrace();
         }finally {
@@ -74,6 +67,6 @@ public class HbaseSimpleDemo {
                 e.printStackTrace();
             }
         }
-        return "test";
+        return res;
     }
 }

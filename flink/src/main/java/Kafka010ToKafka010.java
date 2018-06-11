@@ -39,7 +39,7 @@ public class Kafka010ToKafka010 {
         kafkaIn010.setStartFromGroupOffsets();
 
         //输出kafka信息
-        String producerTopic = "system.img";
+        String producerTopic = "system.imgV2";
         Properties produce_prop = new Properties();
         produce_prop.setProperty("bootstrap.servers", "10.85.115.98:9092,10.85.115.99:9092,10.85.115.100:9092,10.85.115.101:9092,10.85.115.102:9092,10.85.115.103:9092,10.85.115.104:9092,10.85.115.105:9092,10.85.115.106:9092,10.85.115.107:9092,10.85.115.108:9092,10.85.115.109:9092,10.85.115.110:9092,10.85.115.111:9092,10.85.115.112:9092,10.85.115.113:9092");
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(producerTopic, new SimpleStringSchema(), produce_prop, new StringPartitioner<>());

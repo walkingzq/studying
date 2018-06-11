@@ -25,12 +25,12 @@ public class Img {
         Properties prop = new Properties();
         prop.setProperty("bootstrap.servers", "10.85.115.98:9092,10.85.115.99:9092,10.85.115.100:9092,10.85.115.101:9092,10.85.115.102:9092,10.85.115.103:9092,10.85.115.104:9092,10.85.115.105:9092,10.85.115.106:9092,10.85.115.107:9092,10.85.115.108:9092,10.85.115.109:9092,10.85.115.110:9092,10.85.115.111:9092,10.85.115.112:9092,10.85.115.113:9092");
 //        prop.setProperty("zookeeper.connect", "10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1");
-        prop.setProperty("group.id", "kafka_system_img_self");
-        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.img", new SimpleStringSchema(), prop);
+        prop.setProperty("group.id", "kafka_system_img_V2_self");
+        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.imgV2", new SimpleStringSchema(), prop);
         kafkaIn010.setStartFromEarliest();//从最早开始消费
 
         //输出kafka信息
-        String producerTopic = "system.img";
+        String producerTopic = "system.imgV2";
         Properties produce_prop = new Properties();
         produce_prop.setProperty("bootstrap.servers", "10.85.115.98:9092,10.85.115.99:9092,10.85.115.100:9092,10.85.115.101:9092,10.85.115.102:9092,10.85.115.103:9092,10.85.115.104:9092,10.85.115.105:9092,10.85.115.106:9092,10.85.115.107:9092,10.85.115.108:9092,10.85.115.109:9092,10.85.115.110:9092,10.85.115.111:9092,10.85.115.112:9092,10.85.115.113:9092");
         FlinkKafkaProducer010<String> kafkaOut010 = new FlinkKafkaProducer010<>(producerTopic, new SimpleStringSchema(), produce_prop, new StringPartitioner<>());
@@ -62,6 +62,6 @@ public class Img {
         });
         stream.addSink(kafkaOut010);
 //        img_copy_to_self.addSink(new BucketingSink<String>("hdfs://emr-header-1/home/flink/flink_test_zq/img2").setBucketer(new BasePathBucketer<>()));
-        senv.execute("kafka_system_img_self");
+        senv.execute("kafka_system_img_V2_self");
     }
 }
