@@ -6,6 +6,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -34,6 +35,7 @@ public class WindowWordCount {
         String hdfs_path = "hdfs://emr-cluster" + args[0];
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
         senv.enableCheckpointing(5000);
+        senv.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
         senv.setStateBackend(new FsStateBackend("hdfs://emr-cluster/flink/stateBackend"));
         senv.setRestartStrategy(RestartStrategies.fixedDelayRestart(4, 10000));
         senv.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);

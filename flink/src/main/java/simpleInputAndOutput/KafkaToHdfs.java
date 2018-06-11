@@ -1,5 +1,6 @@
+package simpleInputAndOutput;
+
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.fs.bucketing.BasePathBucketer;
@@ -25,8 +26,8 @@ public class KafkaToHdfs {
      * groupId consumer-groupId
      * topic 要消费的topic名称
      * hdfsPath 要输出的hdfs基础路径
-     * @usage java -cp [jar_path] KafkaToHdfs [servers] [zk] [groupId] [topic] [hdfsPath]
-     * @example java -cp [jar_path] KafkaToHdfs 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq
+     * @usage java -cp [jar_path] simpleInputAndOutput.KafkaToHdfs [servers] [zk] [groupId] [topic] [hdfsPath]
+     * @example java -cp [jar_path] simpleInputAndOutput.KafkaToHdfs 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq
      * flink run -m yarn-cluster -yn 4 -yjm 1024 -ytm 4096 flink-1.0-SNAPSHOT-jar-with-dependencies.jar 10.87.52.135:9092,10.87.52.134:9092,10.87.52.158:9092 10.87.52.135:2181,10.87.52.134:2181,10.87.52.158:2181/kafka-0.10.1.1 kafkaToHdfs test hdfs://emr-header-1/home/flink/flink_test_zq/data
      * @param args
      * @throws Exception

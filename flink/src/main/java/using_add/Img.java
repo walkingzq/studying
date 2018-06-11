@@ -1,12 +1,11 @@
-import org.apache.flink.api.common.functions.FlatMapFunction;
+package using_add;
+
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
-import org.apache.flink.util.Collector;
-import partitioner.SimplePartitioner;
 import partitioner.StringPartitioner;
 
 import java.util.Properties;
