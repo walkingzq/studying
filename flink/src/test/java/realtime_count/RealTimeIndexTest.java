@@ -34,13 +34,24 @@ public class RealTimeIndexTest {
     }
 
     public static void main(String[] args) throws Exception{
-        String str = "{\"start_time\":\"2018-06-09 16:20:00\",\"end_time\":\"2018-06-09 16:29:59\",\"indexs\":{\"lk_5_4\":\"16\",\"other\":\"1215732\",\"cmt_5_4\":\"9\",\"lk_5_3\":\"13\",\"lk_5_2\":\"13\",\"cmt_5_3\":\"8\",\"cmt_5_2\":\"4\",\"cmt_5_1\":\"11\",\"cmt_5_0\":\"10\",\"lk_5_1\":\"16\",\"lk_5_0\":\"50\"}}";
-        Pattern p = Pattern.compile("\\{\"start_time\":\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})");
-        Matcher m = p.matcher(str);
-        if (m.find()){
-            System.out.println(m.group(1));
-        }else {
-            System.out.println("not find.");
+//        String str = "{\"start_time\":\"2018-06-09 16:20:00\",\"end_time\":\"2018-06-09 16:29:59\",\"indexs\":{\"lk_5_4\":\"16\",\"other\":\"1215732\",\"cmt_5_4\":\"9\",\"lk_5_3\":\"13\",\"lk_5_2\":\"13\",\"cmt_5_3\":\"8\",\"cmt_5_2\":\"4\",\"cmt_5_1\":\"11\",\"cmt_5_0\":\"10\",\"lk_5_1\":\"16\",\"lk_5_0\":\"50\"}}";
+//        Pattern p = Pattern.compile("\\{\"start_time\":\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})");
+//        Matcher m = p.matcher(str);
+//        if (m.find()){
+//            System.out.println(m.group(1));
+//        }else {
+//            System.out.println("not find.");
+//        }
+        Sub sub = new Sub();
+        System.out.println(windowSize);
+        System.out.println(sub.getSize());
+    }
+
+    private static long windowSize = 4;
+
+    public static class Sub{
+        public long getSize(){
+            return windowSize;
         }
     }
 

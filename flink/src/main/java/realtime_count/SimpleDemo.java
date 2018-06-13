@@ -31,6 +31,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -46,6 +48,8 @@ import java.util.regex.Pattern;
  * realtime_count.SimpleDemo
  */
 public class SimpleDemo {
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleDemo.class);//log4j日志对象
+
     private static final String FWD = "fwd";//转发
 
     private static final String CMT = "cmt";//评论
@@ -62,13 +66,52 @@ public class SimpleDemo {
 
     private static final Pattern p_timestamp = Pattern.compile("\\{\"start_time\":\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})");//start_time捕获正则表达式
 
+    //需要设定的参数
+    private static long windowSize;//窗口大小，毫秒
+
+    private static int digit;//分组依据：uid倒数第几位
+
+    private static String hdfs_path;//hdfs主路径
+
+    private static String hbase_business;//hbase business
+
+    private static String hbase_keyId;//hbase_keyId
+
+
+    /**
+     * 命令行参数解析
+     * @param args
+     */
+    private static void paramsInit(String[] args){
+        if (args.length != 3){
+            LOG.error("Invaild params length! Required params: <windowSize> <digit> <hdfs_path>");
+            System.exit(1);//退出
+        }
+        try {
+            windowSize = Long.parseLong(args[0]);
+        }catch (NumberFormatException exc){
+            LOG.error("The input windowSize must be a figure that can be parsed to long type.", exc);
+            System.exit(1);//退出
+        }
+        try {
+            digit = Integer.parseInt(args[1]);
+        }catch (NumberFormatException exc){
+            LOG.error("The input digit must be a figure that can be parsed to int type.", exc);
+            System.exit(1);//退出
+        }
+        hdfs_path = args[2];
+        hbase_business = "experimental_results";
+        hbase_keyId = "realtime_index_count";
+    }
+
+
     /**
      * 程序入口
      * @param args （输入一个hdfs路径，作为实时指标统计的备份）
      * @throws Exception
      */
     public static void main(String[] args) throws Exception{
-        String hdfs_path = args[0];
+        paramsInit(args);//用户参数解析
 
         final StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
         senv.enableCheckpointing(5000);//checkpoint间隔:5秒
@@ -78,10 +121,10 @@ public class SimpleDemo {
 
         //输入kafka topic信息（topic名:system.weibo_interact，group.id:business_engine_effect）
         Properties conProp = new Properties();
-        conProp.setProperty("bootstrap.servers", "10.77.29.163:9092,10.77.29.164:9092,10.77.31.210:9092,10.77.31.211:9092,10.77.31.212:9092,10.77.29.219:9092,10.77.29.220:9092,10.77.29.221:9092,10.77.29.222:9092,10.77.29.223:9092,10.77.29.224:9092,10.77.29.225:9092");
-        conProp.setProperty("group.id", "business_engine_effect");
-        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.weibo_interact", new SimpleStringSchema(), conProp);
-        kafkaIn010.setStartFromGroupOffsets();//从group offset处开始消费
+        conProp.setProperty("bootstrap.servers", "10.77.29.163:9092,10.77.29.164:9092,10.77.31.210:9092,10.77.31.211:9092,10.77.31.212:9092,10.77.29.219:9092,10.77.29.220:9092,10.77.29.221:9092,10.77.29.222:9092,10.77.29.223:9092,10.77.29.224:9092,10.77.29.225:9092");//TODO:kafka broker
+        conProp.setProperty("group.id", "business_engine_effect");//TODO:group.id设置
+        FlinkKafkaConsumer010<String> kafkaIn010 = new FlinkKafkaConsumer010<String>("system.weibo_interact", new SimpleStringSchema(), conProp);//TODO:消费topic名
+        kafkaIn010.setStartFromGroupOffsets();//从group offset处开始消费//TODO:kafka消费起始offset
         kafkaIn010.assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<String>() {//为每条记录设定eventtime和watermark
             private final long maxOutOdOrderTime = 3500;
             private long currentMaxTimestamp;
@@ -104,20 +147,17 @@ public class SimpleDemo {
         //开始数据流处理逻辑
         DataStream<String> input = senv.addSource(kafkaIn010);//从kafka接入数据
 
-        //窗口统计
+        //窗口统计--单项指标统计（窗口内转评赞的记录个数）
         DataStream<WindowWordCountEvent> windowWordCount = input.map(new MapFunction<String, WindowWordCountEvent>() {//按照指定规则将每条记录映射为要统计的记录类别（本例中有四类：fwd、cmt、lk和other）
             @Override
             public WindowWordCountEvent map(String value) throws Exception {
                 long time = toTimestamp(value.split("\\t")[0]);
                 WindowWordCountEvent windowWordCountEvent = new WindowWordCountEvent(time, time, getRecordType(value), 1);
-                if (windowWordCountEvent.getWord().equals("lk") || windowWordCountEvent.equals("cmt") || windowWordCountEvent.equals("fwd")){
-                    System.out.println("origin:" + windowWordCountEvent.toJson());
-                }
                 return windowWordCountEvent;
             }
         }).keyBy("word")//按Word字段进行逻辑分区
-                .window(TumblingEventTimeWindows.of(Time.minutes(10)))//窗口大小:10min
-                .aggregate(new WindowWordCountAggregate());//聚合一个窗口内的记录
+                .window(TumblingEventTimeWindows.of(Time.milliseconds(windowSize)))//窗口大小
+                .aggregate(new WindowWordCountAggregate(windowSize));//聚合一个窗口内的记录
 
         //窗口指标聚合--汇总一个窗口内统计的所有指标
         DataStream<RealTimeIndex> indexAggregate = windowWordCount.keyBy("start_time")
@@ -145,7 +185,7 @@ public class SimpleDemo {
 
         output.addSink(new BucketingSink<String>(hdfs_path + "/total").setBucketer(new BasePathBucketer<>()));//写入hdfs
 
-        output.addSink(new HttpSink<String>("experimental_results", "realtime_index_count"));//写入hbase
+        output.addSink(new HttpSink<String>(hbase_business, hbase_keyId));//写入hbase
         senv.execute("windowTypeCount");
     }
 
@@ -326,9 +366,9 @@ public class SimpleDemo {
          */
         String[] strs = str.split("\\t");
         String uid = strs[2];//uid
-        String groupId = "_5_null";//groupId
-        if (uid.length() > 5){
-            groupId = "_5_" + uid.charAt(uid.length() - 5);//设定group_id
+        String groupId = "_" + digit + "_null";//groupId
+        if (uid.length() > digit){
+            groupId = "_" + digit + "_" + uid.charAt(uid.length() - 5);//设定group_id
         }
         String bhv_code = strs[3];//hbv_code
         String mode = strs[5];//mode
@@ -368,8 +408,17 @@ public class SimpleDemo {
 
     /**
      * 窗口内单项指标统计
+     * 统计每个窗口时间内fwd、cmt、lk和other的个数
      */
     public static class WindowWordCountAggregate implements AggregateFunction<WindowWordCountEvent, WindowWordCountEvent, WindowWordCountEvent> {
+        private long size;
+
+        public WindowWordCountAggregate(){}
+
+        public WindowWordCountAggregate(long size) {
+            this.size = size;
+        }
+
         @Override
         public WindowWordCountEvent createAccumulator() {
             return new WindowWordCountEvent();
@@ -385,9 +434,9 @@ public class SimpleDemo {
         @Override
         public WindowWordCountEvent getResult(WindowWordCountEvent accumulator) {
             long timestamp = accumulator.start_time;
-            long n = timestamp / 600000;
-            long start_time = 600 * 1000 * n;
-            WindowWordCountEvent result = new WindowWordCountEvent(start_time, start_time + 599000, accumulator.getWord(), accumulator.getCount());
+            long n = timestamp / size;
+            long start_time = size * n;
+            WindowWordCountEvent result = new WindowWordCountEvent(start_time, start_time + size - 1, accumulator.getWord(), accumulator.getCount());
             return result;
         }
 
