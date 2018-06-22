@@ -59,7 +59,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>realtime_count.SimpleDemo</mainClass>
+                            <mainClass>simpleInputAndOutput.Kafka010ToKafka010</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
