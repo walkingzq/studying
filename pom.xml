@@ -17,6 +17,7 @@
         <module>hadoop</module>
         <module>kafka</module>
         <module>java</module>
+        <module>dubbo</module>
     </modules>
 
     <dependencies>
@@ -57,11 +58,11 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>simpleInputAndOutput.Kafka010ToKafka010</mainClass>
-                        </manifest>
-                    </archive>
+                    <!--<archive>-->
+                        <!--<manifest>-->
+                            <!--<mainClass>simpleInputAndOutput.Kafka010ToKafka010</mainClass>-->
+                        <!--</manifest>-->
+                    <!--</archive>-->
                 </configuration>
                 <executions>
                     <execution>
